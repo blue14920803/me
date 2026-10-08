@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>👎🏻 討厭鬼班表查詢系統 - 特定同仁對照版</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #cbd5e1;
+      --off-day: #dc2626;
+      --rest-day: #059669;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 12px; max-width: 800px; margin: 0 auto; }
+    
+    h1 { text-align: center; color: var(--primary); font-size: 1.4rem; margin: 10px 0 15px; }
+    
+    .card { background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+    .form-group { margin-bottom: 12px; text-align: left; width: 100%; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b; text-align: left; }
+    
+    /* 修正日期與月份輸入框：採用明亮藍色 var(--primary-light) 與統一的高度居中樣式 */
+    input[type="date"], input[type="month"] { 
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      width: 100%; 
+      height: 40px;
+      line-height: 40px;
+      padding: 0 10px; 
+      border: 1px solid var(--border); 
+      border-radius: 6px; 
+      font-size: 0.95rem; 
+      font-weight: 600;
+      background-color: #fff; 
+      text-align: center;
+      color: var(--primary-light);
+      box-sizing: border-box;
+      display: block;
+    }
+    
+    /* 修正 iOS / Safari / Chrome 內部日期文字偏上問題 */
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="month"]::-webkit-date-and-time-value {
+      height: 40px;
+      line-height: 40px;
+      margin: 0;
+      text-align: center;
+      color: var(--primary-light);
+    }
+
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="month"]::-webkit-datetime-edit {
+      padding: 0;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--primary-light);
+    }
+
+    select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background-color: #fff; }
+    
+    .btn-group { display: flex; gap: 6px; margin-bottom: 12px; }
+    .btn { flex: 1; padding: 10px 4px; border: 1px solid var(--border); border-radius: 8px; background: #e2e8f0; cursor: pointer; font-weight: bold; font-size: 0.85rem; color: #475569; text-align: center; }
+    .btn.active { background: var(--primary-light); color: white; border-color: var(--primary-light); }
+
+    .main-shift {
+      display: block;
+      font-size: 0.88rem;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .time-note {
+      display: block;
+      font-size: 0.75em;
+      font-weight: normal;
+      opacity: 0.85;
+      margin-top: 1px;
+      white-space: nowrap;
+    }
+
+    /* 全員卡片視圖 */
+    .all-grid { display: flex; flex-direction: column; gap: 10px; }
+    .person-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: #fff; }
+    .person-info { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .person-name { font-weight: bold; font-size: 1.05rem; color: #1e293b; }
+    .cycle-badge { font-size: 0.75rem; color: #64748b; }
+    .shift-detail { font-weight: 700; text-align: right; max-width: 75%; overflow: hidden; }
+
+    /* 單日檢視 */
+    .single-box { text-align: center; padding: 20px 10px; }
+    .badge { display: inline-block; background: var(--primary); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; }
+    .shift-title { font-size: 1.25rem; font-weight: 800; margin: 12px 0; color: #0f172a; line-height: 1.3; }
+    .shift-title .main-shift { font-size: 1.15rem; white-space: normal; }
+    .sub-text { font-size: 0.9rem; color: #64748b; }
+
+    /* 月曆檢視 */
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-head { text-align: center; font-weight: bold; padding: 6px 0; font-size: 0.8rem; background: #e2e8f0; border-radius: 4px; }
+    .cal-cell { border: 1px solid var(--border); border-radius: 6px; padding: 4px; min-height: 80px; background: #fff; font-size: 0.75rem; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+    .cal-cell .d-num { font-weight: bold; }
+    .cal-cell .c-num { font-size: 0.65rem; color: #64748b; }
+    .cal-cell .s-text { font-weight: 600; margin-top: 2px; line-height: 1.15; }
+    .cal-cell .main-shift { font-size: 0.68rem; letter-spacing: -0.5px; }
+    
+    /* 色塊與假別背景標示 */
+    .bg-off { background-color: #fef2f2; border-color: #fca5a5; }
+    .bg-off .shift-detail, .bg-off .s-text { color: var(--off-day); font-weight: bold; }
+    .bg-rest { background-color: #ecfdf5; border-color: #6ee7b7; }
+    .bg-rest .shift-detail, .bg-rest .s-text { color: var(--rest-day); font-weight: bold; }
+    .bg-orange { background-color: #fff7ed; border-color: #ffedd5; }
+    .bg-yellow { background-color: #fefce8; border-color: #fef08a; }
+    .bg-red { background-color: #fff1f2; border-color: #fecdd3; }
+    .bg-white { background-color: #ffffff; border-color: #e2e8f0; }
+    .is-today { border: 2px solid var(--primary-light); }
+
+    @media (max-width: 480px) {
+      .cal-cell { min-height: 68px; padding: 2px; }
+      .cal-cell .main-shift { font-size: 0.62rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>👎🏻 討厭鬼班表查詢系統</h1>
+
+  <div class="card">
+    <div class="btn-group">
+      <button type="button" class="btn active" id="btnAll">👥 全員同日對照</button>
+      <button type="button" class="btn" id="btnSingle">👤 個人單日查詢</button>
+      <button type="button" class="btn" id="btnMonth">🗓 個人整月月曆</button>
+    </div>
+
+    <div id="personGroup" class="form-group" style="display: none;">
+      <label for="personSelect">🧑‍✈️ 選擇同仁：</label>
+      <select id="personSelect">
+        <option value="67">心機鬼秀芸</option>
+        <option value="15">陰莖老奸詐</option>
+        <option value="57">玻璃爛崇本</option>
+        <option value="2">忘恩負奕慈</option>
+        <option value="16">白瘦爛哲煒</option>
+        <option value="35">爛狂歡珮瑄</option>
+      </select>
+    </div>
+
+    <div id="dateBox" class="form-group" style="margin-bottom:0;">
+      <label for="targetDate">📅 選擇日期：</label>
+      <input type="date" id="targetDate">
+    </div>
+
+    <div id="monthBox" class="form-group" style="display: none; margin-bottom:0;">
+      <label for="targetMonth">🗓️ 選擇月份：</label>
+      <input type="month" id="targetMonth">
+    </div>
+  </div>
+
+  <!-- 全員對照 View -->
+  <div id="allView" class="card">
+    <div id="allDateHeader" style="text-align: center; font-weight: bold; margin-bottom: 12px; color: #1e3a8a;"></div>
+    <div id="allGrid" class="all-grid"></div>
+  </div>
+
+  <!-- 個人單日 View -->
+  <div id="singleView" class="card single-box" style="display: none;">
+    <div id="dayBadge" class="badge">第 -- 天</div>
+    <div id="shiftDate" class="sub-text"></div>
+    <div id="shiftTitle" class="shift-title">請選擇日期</div>
+    <div id="shiftNote" class="sub-text"></div>
+  </div>
+
+  <!-- 個人月曆 View -->
+  <div id="monthView" class="card cal-grid" style="display: none;"></div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    
+    const BASE_DATE = new Date(2026, 8, 1); // 2026/09/01
+
+    const TEAM_MEMBERS = [
+      { name: "心機鬼秀芸", baseDay: 67 },
+      { name: "陰莖老奸詐", baseDay: 15 },
+      { name: "玻璃爛崇本", baseDay: 57 },
+      { name: "忘恩負奕慈", baseDay: 2 },
+      { name: "白瘦爛哲煒", baseDay: 16 },
+      { name: "爛狂歡珮瑄", baseDay: 35 }
+    ];
+
+    let currentView = 'all';
+
+    function fmt(mainShift, timeText) {
+      if (!timeText) return `<span class="main-shift">${mainShift}</span>`;
+      return `<span class="main-shift">${mainShift}</span><span class="time-note">（${timeText}）</span>`;
+    }
+
+    function getShiftRules(day, date) {
+      const dayOfWeek = date.getDay();
+      const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+      const isWeekday = !isWeekend;
+
+      switch(day) {
+        case 1: return fmt("🟡4193便-4048", "18:15上班");
+        case 2: return fmt("🟠4137", "12:37下班");
+        case 3: return fmt("🔴1161-1212-277便", "10:52上班");
+        case 4: return isWeekday ? fmt("🟠4006-4019-219", "出勤日15:42下班") : fmt("🟠4008A-4008-4019-219", "出勤日15:42下班");
+        case 5: return fmt("🔴1147-1228-4193便", "09:05上班");
+        case 6: return fmt("🟢整2-4026便", "10:09下班");
+        case 7: return fmt("🟢例假");
+        case 8: return fmt("🔴1207-1268-1272便", "15:01上班");
+        case 9: return fmt("🟠4154-4131", "11:21下班");
+        case 10: return fmt("🔴432", "13:58上班");
+        case 11: 
+          if (dayOfWeek === 1) return fmt("🟢401便", "09:25下班");
+          if ([2, 3, 4].includes(dayOfWeek)) return fmt("🟠411", "13:13下班");
+          return fmt("🟠405", "11:13下班");
+        case 12: return fmt("🔴1152-1191便-1223-1268便", "出勤日09:21上班");
+        case 13: return fmt("🟠1124-1161", "11:51下班");
+        case 14: return fmt("🟢例假");
+        case 15: return fmt("🔴1217", "15:51上班");
+        case 16: return fmt("🟠1128-1128B-1152便-1177", "出勤日13:04下班");
+        case 17: return fmt("🔴4188便-165", "12:43上班");
+        case 18: return fmt("🟠110-1177便", "12:54下班");
+        case 19: return fmt("🔴2193-2194", "11:21上班");
+        case 20: return fmt("🟢2133-2008便", "09:02下班");
+        case 21: return fmt("🟢例假");
+        case 22:
+          if (dayOfWeek === 5) return fmt("🔴236-237", "14:43上班/22:51下班");
+          if (dayOfWeek === 6) return fmt("⚪️日待");
+          return fmt("🟢4037-1298B便", "22:29上班");
+        case 23: return isWeekday ? fmt("🟢1008A-1008-1008B", "10:19下班") : fmt("🟠127A-127-180便", "10:09上班/16:55下班");
+        case 24: return fmt("🔴1177-1238", "11:55上班");
+        case 25: return fmt("🟢1106-2153", "08:30下班");
+        case 26: return fmt("🟢週休");
+        case 27: return fmt("🟢例假");
+        case 28: return fmt("🔴1226A-1226-1226B-1254-1271", "出勤日15:42上班");
+        case 29: return fmt("🟠1162-1203", "15:29下班");
+        case 30: return fmt("🔴4177便-整6-1276便", "15:23上班");
+        case 31: return fmt("🟠4003便-整3-4198便", "14:27下班");
+        case 32: return fmt("🔴1166-179-141便", "11:52上班");
+        case 33: return fmt("🟢472", "08:52下班");
+        case 34: return fmt("🟢例假");
+        case 35: return fmt("🟡2037便-1282-1048便", "18:12上班");
+        case 36: return fmt("🟠1138便-2193", "12:30下班");
+        case 37: return fmt("🔴1203便-4046A-4046-4240便", "14:31上班");
+        case 38: return fmt("🟠1127A-1127-1198", "出勤日14:49下班");
+        case 39: return fmt("🔴1194-1223", "13:01上班");
+        case 40: return fmt("🟢1109-2123便-1152", "10:30下班");
+        case 41: return fmt("🟢例假");
+        case 42: return fmt("🟡4236-4215-1281", "17:48上班");
+        case 43: return isWeekday ? fmt("🟠1182-1207", "16:10下班") : fmt("🟠1168便-1180-1207", "16:10下班");
+        case 44: return fmt("🔴1203-1254", "14:21上班");
+        case 45: return fmt("🟠1129A-1129-1174", "12:20下班");
+        case 46: 
+          if ([2, 3, 4].includes(dayOfWeek)) return fmt("🔴224-231便", "出勤日10:56上班");
+          return fmt("🔴224-1-431便", "出勤日10:56上班");
+        case 47: return isWeekday ? fmt("🟠1106便-1110-1135-1168便", "11:38下班") : fmt("🟢1106便-1110-1139-1139便", "09:41下班");
+        case 48: return fmt("🟢例假");
+        case 49: return fmt("🟡4234-4234B-4225A-4225", "17:09上班");
+        case 50: return fmt("🟠1108-1131-1192", "14:33下班");
+        case 51: return fmt("🟡1251-152便", "19:22上班");
+        case 52: return fmt("🟢4138", "06:19下班");
+        case 53: return fmt("🟢週休");
+        case 54: return fmt("🟢例假");
+        case 55: return fmt("🟡4027-4027B-1048", "18:07上班");
+        case 56: return fmt("🟠1142便-1187", "14:02下班");
+        case 57: return (dayOfWeek === 0) ? fmt("🔴411便-234-234B-233A-237", "12:16上班/22:51下班") : fmt("⚪️日待");
+        case 58: return (dayOfWeek === 4) ? fmt("🔴236-443", "14:43上班/23:18下班") : fmt("⚪️日待");
+        case 59: return fmt("🔴1174-1191便-1227A-1227", "出勤日11:15上班");
+        case 60: return fmt("🟢272-171A-171便", "09:58下班");
+        case 61: return fmt("🟢例假");
+        case 62: return fmt("🟡1231便-1274-1274B", "17:20上班");
+        case 63: return fmt("🟠4152-4135", "11:58下班");
+        case 64: return fmt("🔴4216便-273-288-288便", "15:42上班");
+        case 65: return fmt("🟠1112便-1143-1194", "14:06下班");
+        case 66: return fmt("🔴401便-整4-442便-4193便", "出勤日08:38上班");
+        case 67: return fmt("🟢整1-4162便", "09:15下班");
+        case 68: return fmt("🟢例假");
+        case 69: return fmt("🔴179便-1268-1268B-1289便", "16:19上班");
+        case 70: return ([5, 6].includes(dayOfWeek)) ? fmt("🟠1170-1178便-1217", "17:00下班") : fmt("⚪️日待");
+        case 71: return fmt("🔴1198-2253", "13:41上班");
+        case 72: return fmt("🟢1122-1147", "10:14下班");
+        case 73: return fmt("🔴426", "11:40上班");
+        case 74: return fmt("🟢401", "09:35下班");
+        case 75: return fmt("🟢例假");
+        case 76:
+          if ([1, 2, 3].includes(dayOfWeek)) return fmt("⚪️日待");
+          if (dayOfWeek === 4) return fmt("🔴432便", "14:08上班");
+          return fmt("🟡436", "17:01上班");
+        case 77:
+          if ([2, 3, 4].includes(dayOfWeek)) return fmt("⚪️日待");
+          return fmt("🟠411", "13:13下班");
+        case 78: return fmt("🔴179便-2042-1289A-1289", "16:19上班");
+        case 79: return fmt("🟢休班", "00:43下班");
+        case 80: return fmt("🟢週休");
+        case 81: return fmt("🟢例假");
+        default: return fmt("未知");
+      }
+    }
+
+    function calculateCycleDay(targetDate, baseShiftDay) {
+      const tDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      const bDate = new Date(BASE_DATE.getFullYear(), BASE_DATE.getMonth(), BASE_DATE.getDate());
+      const diffTime = tDate.getTime() - bDate.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+      
+      let day = (baseShiftDay + diffDays) % 81;
+      if (day <= 0) day += 81;
+      return day;
+    }
+
+    function applyStyleClass(element, shiftText) {
+      if (shiftText.includes('🟢')) {
+        element.classList.add('bg-rest');
+      } else if (shiftText.includes('🟠')) {
+        element.classList.add('bg-orange');
+      } else if (shiftText.includes('🟡')) {
+        element.classList.add('bg-yellow');
+      } else if (shiftText.includes('🔴')) {
+        element.classList.add('bg-red');
+      } else if (shiftText.includes('⚪️')) {
+        element.classList.add('bg-white');
+      }
+    }
+
+    function renderView() {
+      const weekNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+
+      if (currentView === 'all') {
+        const dateInput = document.getElementById('targetDate').value;
+        if (!dateInput) return;
+
+        const parts = dateInput.split('-');
+        const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+        document.getElementById('allDateHeader').innerText = `📅 ${dateInput} (${weekNames[targetDate.getDay()]}) 全員班表`;
+        
+        const allGrid = document.getElementById('allGrid');
+        allGrid.innerHTML = '';
+
+        TEAM_MEMBERS.forEach(m => {
+          const cycleDay = calculateCycleDay(targetDate, m.baseDay);
+          const shiftText = getShiftRules(cycleDay, targetDate);
+
+          const card = document.createElement('div');
+          card.className = 'person-card';
+          applyStyleClass(card, shiftText);
+
+          card.innerHTML = `
+            <div class="person-info">
+              <div class="person-name">${m.name}</div>
+              <div class="cycle-badge">循環第 ${cycleDay} 天</div>
+            </div>
+            <div class="shift-detail">${shiftText}</div>
+          `;
+          allGrid.appendChild(card);
+        });
+
+      } else if (currentView === 'single') {
+        const personSelect = document.getElementById('personSelect');
+        const baseShiftDay = parseInt(personSelect.value, 10);
+        const dateInput = document.getElementById('targetDate').value;
+        if (!dateInput) return;
+
+        const parts = dateInput.split('-');
+        const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+        const cycleDay = calculateCycleDay(targetDate, baseShiftDay);
+        const shiftText = getShiftRules(cycleDay, targetDate);
+
+        document.getElementById('dayBadge').innerText = `循環第 ${cycleDay} 天`;
+        document.getElementById('shiftDate').innerText = `${dateInput} (${weekNames[targetDate.getDay()]})`;
+        document.getElementById('shiftTitle').innerHTML = shiftText;
+
+        if (shiftText.includes('🟢')) {
+          document.getElementById('shiftNote').innerText = "☕ 今日休息休假";
+        } else {
+          document.getElementById('shiftNote').innerText = "💡 已自動判斷平日/假日模式與時間標記";
+        }
+
+      } else {
+        const personSelect = document.getElementById('personSelect');
+        const baseShiftDay = parseInt(personSelect.value, 10);
+        const monthInput = document.getElementById('targetMonth').value;
+        if (!monthInput) return;
+
+        const [year, month] = monthInput.split('-').map(Number);
+        const monthGrid = document.getElementById('monthView');
+        monthGrid.innerHTML = '';
+
+        const weekHeaders = ["日", "一", "二", "三", "四", "五", "六"];
+        weekHeaders.forEach(w => {
+          const head = document.createElement('div');
+          head.className = 'cal-head';
+          head.innerText = w;
+          monthGrid.appendChild(head);
+        });
+
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+        const startDayOfWeek = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+        const todayStr = new Date().toDateString();
+
+        for (let i = 0; i < startDayOfWeek; i++) {
+          const empty = document.createElement('div');
+          empty.className = 'cal-cell';
+          empty.style.background = '#f8fafc';
+          monthGrid.appendChild(empty);
+        }
+
+        for (let d = 1; d <= totalDays; d++) {
+          const currentDate = new Date(year, month - 1, d);
+          const cycleDay = calculateCycleDay(currentDate, baseShiftDay);
+          const shiftText = getShiftRules(cycleDay, currentDate);
+
+          const cell = document.createElement('div');
+          cell.className = 'cal-cell';
+          applyStyleClass(cell, shiftText);
+
+          if (currentDate.toDateString() === todayStr) cell.classList.add('is-today');
+
+          cell.innerHTML = `
+            <div>
+              <div class="d-num">${d}</div>
+              <div class="c-num">第${cycleDay}天</div>
+            </div>
+            <div class="s-text">${shiftText}</div>
+          `;
+          monthGrid.appendChild(cell);
+        }
+      }
+    }
+
+    document.getElementById('btnAll').addEventListener('click', function() {
+      currentView = 'all';
+      this.classList.add('active');
+      document.getElementById('btnSingle').classList.remove('active');
+      document.getElementById('btnMonth').classList.remove('active');
+      
+      document.getElementById('allView').style.display = 'block';
+      document.getElementById('singleView').style.display = 'none';
+      document.getElementById('monthView').style.display = 'none';
+      
+      document.getElementById('personGroup').style.display = 'none';
+      document.getElementById('dateBox').style.display = 'block';
+      document.getElementById('monthBox').style.display = 'none';
+      renderView();
+    });
+
+    document.getElementById('btnSingle').addEventListener('click', function() {
+      currentView = 'single';
+      this.classList.add('active');
+      document.getElementById('btnAll').classList.remove('active');
+      document.getElementById('btnMonth').classList.remove('active');
+      
+      document.getElementById('allView').style.display = 'none';
+      document.getElementById('singleView').style.display = 'block';
+      document.getElementById('monthView').style.display = 'none';
+      
+      document.getElementById('personGroup').style.display = 'block';
+      document.getElementById('dateBox').style.display = 'block';
+      document.getElementById('monthBox').style.display = 'none';
+      renderView();
+    });
+
+    document.getElementById('btnMonth').addEventListener('click', function() {
+      currentView = 'month';
+      this.classList.add('active');
+      document.getElementById('btnAll').classList.remove('active');
+      document.getElementById('btnSingle').classList.remove('active');
+      
+      document.getElementById('allView').style.display = 'none';
+      document.getElementById('singleView').style.display = 'none';
+      document.getElementById('monthView').style.display = 'grid';
+      
+      document.getElementById('personGroup').style.display = 'block';
+      document.getElementById('dateBox').style.display = 'none';
+      document.getElementById('monthBox').style.display = 'block';
+      renderView();
+    });
+
+    document.getElementById('personSelect').addEventListener('change', renderView);
+    document.getElementById('targetDate').addEventListener('change', renderView);
+    document.getElementById('targetMonth').addEventListener('change', renderView);
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+
+    document.getElementById('targetDate').value = `${yyyy}-${mm}-${dd}`;
+    document.getElementById('targetMonth').value = `${yyyy}-${mm}`;
+
+    renderView();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🤝🏻 呆鐵捧油班表查詢系統</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #cbd5e1;
+      --off-day: #dc2626;
+      --rest-day: #059669;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 8px; max-width: 1200px; margin: 0 auto; }
+    
+    h1 { text-align: center; color: var(--primary); font-size: 1.35rem; margin: 6px 0 12px; }
+    
+    .card { background: var(--card-bg); padding: 12px; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin-bottom: 12px; }
+    .form-group { margin-bottom: 8px; text-align: left; width: 100%; }
+    label.title-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b; text-align: left; }
+    
+    /* 修正日期與月份輸入框：採用明亮藍色 var(--primary-light) 與統一的高度居中樣式 */
+    input[type="date"], input[type="month"] { 
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      width: 100%; 
+      height: 40px;
+      line-height: 40px;
+      padding: 0 10px; 
+      border: 1px solid var(--border); 
+      border-radius: 6px; 
+      font-size: 0.95rem; 
+      font-weight: 600;
+      background-color: #fff; 
+      text-align: center;
+      color: var(--primary-light);
+      box-sizing: border-box;
+      display: block;
+    }
+    
+    /* 修正 iOS / Safari / Chrome 內部日期文字偏上問題 */
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="month"]::-webkit-date-and-time-value {
+      height: 40px;
+      line-height: 40px;
+      margin: 0;
+      text-align: center;
+      color: var(--primary-light);
+    }
+
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="month"]::-webkit-datetime-edit {
+      padding: 0;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--primary-light);
+    }
+    
+    /* 切換檢視按鈕 */
+    .btn-group { display: flex; gap: 6px; margin-bottom: 10px; }
+    .btn { flex: 1; padding: 8px 4px; border: 1px solid var(--border); border-radius: 6px; background: #e2e8f0; cursor: pointer; font-weight: bold; font-size: 0.88rem; color: #475569; text-align: center; }
+    .btn.active { background: var(--primary-light); color: white; border-color: var(--primary-light); }
+
+    .sub-btn-group { display: flex; gap: 4px; margin-top: 6px; }
+    .sub-btn { flex: 1; padding: 6px 4px; border: 1px solid var(--border); border-radius: 4px; background: #f1f5f9; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #475569; text-align: center; }
+    .sub-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+
+    /* 人員分類選擇區塊 */
+    .category-group { margin-bottom: 10px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
+    .category-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .category-title { font-weight: 600; font-size: 0.85rem; color: #334155; }
+    .category-actions { display: flex; gap: 6px; }
+    
+    /* 全選/全不選按鈕：去底線、加圓角底色 */
+    .action-btn { 
+      background: #e2e8f0; 
+      border: 1px solid #cbd5e1; 
+      color: #334155; 
+      font-size: 0.75rem; 
+      font-weight: 600;
+      cursor: pointer; 
+      text-decoration: none; 
+      padding: 3px 8px; 
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+    .action-btn:hover {
+      background: #3b82f6;
+      color: #ffffff;
+      border-color: #3b82f6;
+    }
+    
+    .member-select-box { display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .member-color-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .member-checkbox-label { display: flex; align-items: center; gap: 4px; background: #fff; padding: 4px 10px; border-radius: 14px; border: 1px solid var(--border); cursor: pointer; font-size: 0.82rem; font-weight: 600; user-select: none; }
+    .member-checkbox-label input { cursor: pointer; width: 14px; height: 14px; }
+
+    /* 單日對照卡片 */
+    .compare-grid { display: flex; flex-direction: column; gap: 8px; }
+    .person-card { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: #fff; }
+    .person-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 4px; margin-bottom: 5px; }
+    .person-name { font-weight: bold; font-size: 0.95rem; color: #1e293b; }
+    
+    /* 車班標籤 */
+    .cycle-tag-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.78rem;
+    }
+    .cycle-tag-name {
+      color: #f8fafc;
+      background-color: #64748b;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    .cycle-tag-day {
+      color: #64748b;
+      font-size: 0.75rem;
+    }
+    
+    .shift-body { font-size: 0.85rem; line-height: 1.35; padding: 2px 0; }
+    .shift-body .main-shift { font-weight: bold; }
+    .shift-body .time-note { font-size: 0.72rem; opacity: 0.85; margin-left: 2px; }
+
+    /* 月檢視外層滾動容器 */
+    .month-wrapper { width: 100%; overflow-x: auto; }
+
+    /* 模式一：卡片流 */
+    .month-container-cards { display: flex; flex-direction: column; gap: 8px; }
+    .month-container-cards .cal-head { display: none; }
+    .month-container-cards .cal-cell {
+      border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #fff; display: flex; flex-direction: column; gap: 6px;
+    }
+    .month-container-cards .cal-cell .d-header {
+      display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 2px;
+    }
+    .month-container-cards .cal-cell .d-num { font-weight: bold; font-size: 0.95rem; color: var(--primary); }
+    .month-container-cards .mobile-weekday { font-weight: 600; font-size: 0.85rem; color: #475569; }
+
+    /* 模式二：7 欄經典月曆 */
+    .month-container-grid { display: grid; grid-template-columns: repeat(7, minmax(105px, 1fr)); gap: 3px; min-width: 735px; }
+    .month-container-grid .cal-head { text-align: center; font-weight: bold; padding: 4px 0; font-size: 0.8rem; background: #e2e8f0; border-radius: 4px; }
+    .month-container-grid .cal-cell { border: 1px solid var(--border); border-radius: 5px; padding: 2px; min-height: 80px; background: #fff; display: flex; flex-direction: column; gap: 2px; }
+    .month-container-grid .cal-cell .d-num { font-weight: bold; font-size: 0.75rem; color: #334155; }
+    .month-container-grid .mobile-weekday { display: none; }
+
+    /* 月曆模式微縮與換行控制（已縮小班別字體） */
+    .month-container-grid .cal-person-block { padding: 2px 2px; border-radius: 3px; line-height: 1.05; }
+    .month-container-grid .cal-person-name { font-weight: bold; font-size: 0.65rem; color: #1e3a8a; margin-bottom: 1px; }
+    .month-container-grid .cal-shift-text { font-size: 0.52rem; letter-spacing: -0.3px; }
+
+    .month-container-grid .cal-shift-text .nobr { 
+      white-space: nowrap; 
+      display: inline-block; 
+    }
+
+    .month-container-grid .cal-shift-text .main-shift { 
+      font-size: 0.52rem; 
+      font-weight: bold;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      line-height: 1.1;
+    }
+
+    .month-container-grid .cal-shift-text .time-note { 
+      font-size: 0.45rem; 
+      display: block; 
+      white-space: nowrap;
+      opacity: 0.85; 
+      margin-top: 1px;
+      letter-spacing: -0.5px;
+    }
+
+    /* 卡片模式專屬樣式（班別字體微縮） */
+    .month-container-cards .cal-person-block { padding: 4px 6px; border-radius: 4px; border: 1px solid transparent; line-height: 1.2; }
+    .month-container-cards .cal-person-name { font-weight: bold; font-size: 0.75rem; color: #1e3a8a; margin-bottom: 2px; }
+    .month-container-cards .cal-shift-text { font-size: 0.7rem; }
+    .month-container-cards .cal-shift-text .main-shift { font-size: 0.72rem; font-weight: bold; }
+    .month-container-cards .cal-shift-text .nobr { white-space: nowrap; display: inline-block; }
+    .month-container-cards .cal-shift-text .time-note { font-size: 0.62rem; display: inline-block; margin-left: 2px; opacity: 0.85; }
+
+    .month-container-cards .day-sub-tag {
+      font-size: 0.68rem;
+      color: #64748b;
+      font-weight: normal;
+      margin-left: 2px;
+    }
+
+    /* 色塊背景樣式 */
+    .bg-rest   { background-color: #ecfdf5 !important; border-color: #a7f3d0 !important; color: var(--rest-day) !important; }
+    .bg-orange { background-color: #fff7ed !important; border-color: #ffedd5 !important; color: #c2410c !important; }
+    .bg-yellow { background-color: #fefce8 !important; border-color: #fef08a !important; color: #a16207 !important; }
+    .bg-red    { background-color: #fff1f2 !important; border-color: #fecdd3 !important; color: #be123c !important; }
+    .bg-blue   { background-color: #eff6ff !important; border-color: #bfdbfe !important; color: #1d4ed8 !important; }
+    .bg-white  { background-color: #f8fafc !important; border-color: #e2e8f0 !important; color: #475569 !important; }
+    
+    .is-today { border: 2px solid var(--primary-light) !important; }
+
+    .no-data-msg { text-align: center; color: #64748b; padding: 15px 0; font-weight: 500; font-size: 0.85rem; width: 100%; }
+  </style>
+</head>
+<body>
+
+  <h1>🤝🏻 呆鐵捧油班表查詢系統</h1>
+
+  <div class="card">
+    <div class="btn-group">
+      <button type="button" class="btn active" id="btnSingle">📅 單日同頁對照</button>
+      <button type="button" class="btn" id="btnMonth">🗓 整月同頁對照</button>
+    </div>
+
+    <div id="monthSubBtnGroup" class="sub-btn-group" style="display: none;">
+      <button type="button" class="sub-btn active" id="subBtnCards">📱 卡片</button>
+      <button type="button" class="sub-btn" id="subBtnGrid">🗓️ 月曆</button>
+    </div>
+
+    <div class="form-group" style="margin-top: 8px;">
+      <div id="categoryContainer"></div>
+    </div>
+
+    <div id="dateBox" class="form-group" style="margin-bottom:0;">
+      <label for="targetDate" class="title-label">📅 選擇日期：</label>
+      <input type="date" id="targetDate">
+    </div>
+
+    <div id="monthBox" class="form-group" style="display: none; margin-bottom:0;">
+      <label for="targetMonth" class="title-label">🗓️ 選擇月份：</label>
+      <input type="month" id="targetMonth">
+    </div>
+  </div>
+
+  <div id="singleView" class="card">
+    <div id="singleDateHeader" style="text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 1rem; color: #1e3a8a;"></div>
+    <div class="compare-grid" id="singleCompareGrid"></div>
+  </div>
+
+  <div id="monthView" class="card month-wrapper" style="display: none;">
+    <div id="monthContainer" class="month-container-cards"></div>
+  </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    
+    const BASE_DATE = new Date(2026, 8, 1);
+
+    // 勾勾顏色順序：紅色 (#ef4444) -> 藍色 (#3b82f6) -> 酒紅色 (#881337) -> 黃色 (#eab308) -> 橘色 (#f97316) -> 綠色 (#22c55e / #84cc16) -> 灰色 (#64748b)
+    const MEMBERS = [
+      // ⚾️ 棒球迷名單
+      { id: "m10", name: "震達", category: "baseball", checkColor: "#ef4444", system: "three_shift", totalDays: 84, baseDay: 6, label: "基隆車班三輪三班" },
+      { id: "m1",  name: "家緯", category: "baseball", checkColor: "#3b82f6", system: "taipei", totalDays: 81, baseDay: 44, label: "台北車班大輪組" },
+      { id: "m2",  name: "怡璇", category: "baseball", checkColor: "#3b82f6", system: "yilan", totalDays: 68, baseDay: 62, label: "宜蘭車班客車組" },
+      { id: "m3",  name: "維慶", category: "baseball", checkColor: "#3b82f6", system: "taipei", totalDays: 81, baseDay: 18, label: "台北車班大輪組" },
+      { id: "m5",  name: "安佐", category: "baseball", checkColor: "#3b82f6", system: "keelung_main", totalDays: 60, baseDay: 59, label: "基隆車班大輪組" },
+      { id: "m6",  name: "信詠", category: "baseball", checkColor: "#3b82f6", system: "taipei", totalDays: 81, baseDay: 47, label: "台北車班大輪組" },
+      { id: "m7",  name: "柏融", category: "baseball", checkColor: "#881337", system: "three_shift", totalDays: 84, baseDay: 23, label: "樹林站三輪三班" },
+      { id: "m4",  name: "兆弘", category: "baseball", checkColor: "#eab308", system: "keelung_express", totalDays: 20, baseDay: 2, label: "基隆車班對號組" },
+      { id: "m8",  name: "培恩", category: "baseball", checkColor: "#eab308", system: "three_shift", totalDays: 84, baseDay: 78, label: "七堵站三輪三班" },
+      { id: "m21", name: "宥然", category: "baseball", checkColor: "#f97316", system: "taipei", totalDays: 81, baseDay: 75, label: "台北車班大輪組" },
+      { id: "m9",  name: "陳曦", category: "baseball", checkColor: "#22c55e", system: "three_shift", totalDays: 84, baseDay: 6, label: "基隆車班三輪三班" },
+      { id: "m18", name: "韋帆", category: "baseball", checkColor: "#64748b", system: "cashier_three_shift", totalDays: 84, baseDay: 46, label: "台北車班三輪三班" },
+      { id: "m19", name: "秋典", category: "baseball", checkColor: "#64748b", system: "taipei", totalDays: 81, baseDay: 77, label: "台北車班大輪組" },
+      { id: "m20", name: "俞安", category: "baseball", checkColor: "#64748b", system: "taipei_weekend", totalDays: 20, baseDay: 5, label: "台北車班週休組" },
+
+      // 🏸 羽球團名單
+      { id: "m11", name: "心幃", category: "badminton", checkColor: "#84cc16", system: "three_shift", totalDays: 84, baseDay: 16, label: "樹林站三輪三班" },
+      { id: "m12", name: "政廷", category: "badminton", checkColor: "#84cc16", system: "three_shift", totalDays: 84, baseDay: 34, label: "樹林站三輪三班" },
+
+      // 💗 摯友名單
+      { id: "m15", name: "育誠", category: "besties", checkColor: "#0ea5e9", system: "keelung_express", totalDays: 20, baseDay: 10, label: "基隆車班對號組" },
+      { id: "m13", name: "恆毅", category: "besties", checkColor: "#0ea5e9", system: "three_shift", totalDays: 84, baseDay: 20, label: "台北站三輪三班" },
+      { id: "m16", name: "晋誠", category: "besties", checkColor: "#0ea5e9", system: "keelung_express", totalDays: 20, baseDay: 15, label: "基隆車班對號組" },
+      { id: "m14", name: "佩萱", category: "besties", checkColor: "#ec4899", system: "keelung_express", totalDays: 20, baseDay: 9, label: "基隆車班對號組" },
+      { id: "m17", name: "品慈", category: "besties", checkColor: "#ec4899", system: "keelung_main", totalDays: 60, baseDay: 55, label: "基隆車班大輪組" }
+    ];
+
+    const CATEGORIES = [
+      { id: "baseball", title: "⚾️ 棒球迷名單選擇" },
+      { id: "badminton", title: "🏸 羽球團名單選擇" },
+      { id: "besties", title: "💗 摯友名單選擇" }
+    ];
+
+    let currentView = 'single';
+    let monthMode = 'cards';
+
+    function initMemberCheckboxes() {
+      const container = document.getElementById('categoryContainer');
+      container.innerHTML = '';
+
+      CATEGORIES.forEach(cat => {
+        const catMembers = MEMBERS.filter(m => m.category === cat.id);
+        if (catMembers.length === 0) return;
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'category-group';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'category-header';
+        headerDiv.innerHTML = `
+          <span class="category-title">${cat.title}</span>
+          <div class="category-actions">
+            <button type="button" class="action-btn select-all" data-cat="${cat.id}">全選</button>
+            <button type="button" class="action-btn deselect-all" data-cat="${cat.id}">全不選</button>
+          </div>
+        `;
+
+        const selectBox = document.createElement('div');
+        selectBox.className = 'member-select-box';
+
+        let currentColor = null;
+        let currentRow = null;
+
+        catMembers.forEach(m => {
+          if (m.checkColor !== currentColor) {
+            currentColor = m.checkColor;
+            currentRow = document.createElement('div');
+            currentRow.className = 'member-color-row';
+            selectBox.appendChild(currentRow);
+          }
+
+          const label = document.createElement('label');
+          label.className = 'member-checkbox-label';
+          label.innerHTML = `<input type="checkbox" value="${m.id}" data-cat="${cat.id}" checked class="member-checkbox" style="accent-color: ${m.checkColor};"> ${m.name}`;
+          currentRow.appendChild(label);
+        });
+
+        groupDiv.appendChild(headerDiv);
+        groupDiv.appendChild(selectBox);
+        container.appendChild(groupDiv);
+      });
+
+      document.querySelectorAll('.member-checkbox').forEach(cb => {
+        cb.addEventListener('change', renderView);
+      });
+
+      document.querySelectorAll('.select-all').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const catId = this.getAttribute('data-cat');
+          document.querySelectorAll(`.member-checkbox[data-cat="${catId}"]`).forEach(cb => cb.checked = true);
+          renderView();
+        });
+      });
+
+      document.querySelectorAll('.deselect-all').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const catId = this.getAttribute('data-cat');
+          document.querySelectorAll(`.member-checkbox[data-cat="${catId}"]`).forEach(cb => cb.checked = false);
+          renderView();
+        });
+      });
+    }
+
+    function fmt(mainShift, timeText) {
+      let formattedShift = mainShift
+        .replace(/([A-Za-z0-9]+便)/g, '<span class="nobr">$1</span>')
+        .replace(/(-(?:<span class="nobr">.*?<\/span>|[A-Za-z0-9\u4e00-\u9fa5]+))/g, '<span class="nobr">$1</span>');
+
+      if (!timeText) return `<span class="main-shift">${formattedShift}</span>`;
+      return `<span class="main-shift">${formattedShift}</span><span class="time-note">（${timeText}）</span>`;
+    }
+
+    // 1. 台北車班大輪組（81天）
+    function getShiftTaipei(day, date) {
+      const w = date.getDay();
+      const isWeekend = (w === 0 || w === 6);
+      switch(day) {
+        case 1: return fmt("🟡4193便-4048", "18:15上班");
+        case 2: return fmt("🟠4137", "12:37下班");
+        case 3: return fmt("🔴1161-1212-277便", "10:52上班");
+        case 4: return isWeekend ? fmt("🟠4008A-4008-4019-219", "出勤日15:42下班") : fmt("🟠4006-4019-219", "出勤日15:42下班");
+        case 5: return fmt("🔴1147-1228-4193便", "09:05上班");
+        case 6: return fmt("🟢整2-4026便", "10:09下班");
+        case 7: return fmt("🟢例假");
+        case 8: return fmt("🔴1207-1268-1272便", "15:01上班");
+        case 9: return fmt("🟠4154-4131", "11:21下班");
+        case 10: return fmt("🔴432", "13:58上班");
+        case 11: 
+          if (w === 1) return fmt("🟢401便", "09:25下班");
+          if (w >= 2 && w <= 4) return fmt("🟠411", "13:13下班");
+          return fmt("🟠405", "11:13下班");
+        case 12: return fmt("🔴1152-1191便-1223-1268便", "出勤日09:21上班");
+        case 13: return fmt("🟠1124-1161", "11:51下班");
+        case 14: return fmt("🟢例假");
+        case 15: return fmt("🔴1217", "15:51上班");
+        case 16: return fmt("🟠1128-1128B-1152便-1177", "出勤日13:04下班");
+        case 17: return fmt("🔴4188便-165", "12:43上班");
+        case 18: return fmt("🟠110-1177便", "12:54下班");
+        case 19: return fmt("🔴2193-2194", "11:21上班");
+        case 20: return fmt("🟢2133-2008便", "09:02下班");
+        case 21: return fmt("🟢例假");
+        case 22: 
+          if (w === 5) return fmt("🔴236-237", "14:43上班/22:51下班");
+          if (w === 6) return fmt("⚪️日待");
+          return fmt("🟢4037-1298B便", "22:29上班");
+        case 23: return isWeekend ? fmt("🟠127A-127-180便", "10:09上班/16:55下班") : fmt("🟢1008A-1008-1008B", "10:19下班");
+        case 24: return fmt("🔴1177-1238", "11:55上班");
+        case 25: return fmt("🟢1106-2153", "08:30下班");
+        case 26: return fmt("🟢週休");
+        case 27: return fmt("🟢例假");
+        case 28: return fmt("🔴1226A-1226-1226B-1254-1271", "出勤日15:42上班");
+        case 29: return fmt("🟠1162-1203", "15:29下班");
+        case 30: return fmt("🔴4177便-整6-1276便", "15:23上班");
+        case 31: return fmt("🟠4003便-整3-4198便", "14:27下班");
+        case 32: return fmt("🔴1166-179-141便", "11:52上班");
+        case 33: return fmt("🟢472", "08:52下班");
+        case 34: return fmt("🟢例假");
+        case 35: return fmt("🟡2037便-1282-1048便", "18:12上班");
+        case 36: return fmt("🟠1138便-2193", "12:30下班");
+        case 37: return fmt("🔴1203便-4046A-4046-4240便", "14:31上班");
+        case 38: return fmt("🟠1127A-1127-1198", "出勤日14:49下班");
+        case 39: return fmt("🔴1194-1223", "13:01上班");
+        case 40: return fmt("🟢1109-2123便-1152", "10:30下班");
+        case 41: return fmt("🟢例假");
+        case 42: return fmt("🟡4236-4215-1281", "17:48上班");
+        case 43: return isWeekend ? fmt("🟠1168便-1180-1207", "16:10下班") : fmt("🟠1182-1207", "16:10下班");
+        case 44: return fmt("🔴1203-1254", "14:21上班");
+        case 45: return fmt("🟠1129A-1129-1174", "12:20下班");
+        case 46: return [2, 3, 4].includes(w) ? fmt("🔴224-231便", "出勤日10:56上班") : fmt("🔴224-1-431便", "出勤日10:56上班");
+        case 47: return isWeekend ? fmt("🟢1106便-1110-1139-1139便", "09:41下班") : fmt("🟠1106便-1110-1135-1168便", "11:38下班");
+        case 48: return fmt("🟢例假");
+        case 49: return fmt("🟡4234-4234B-4225A-4225", "17:09上班");
+        case 50: return fmt("🟠1108-1131-1192", "14:33下班");
+        case 51: return fmt("🟡1251-152便", "19:22上班");
+        case 52: return fmt("🟢4138", "06:19下班");
+        case 53: return fmt("🟢週休");
+        case 54: return fmt("🟢例假");
+        case 55: return fmt("🟡4027-4027B-1048", "18:07上班");
+        case 56: return fmt("🟠1142便-1187", "14:02下班");
+        case 57: return w === 0 ? fmt("🔴236-237", "14:43上班/22:51下班") : fmt("⚪️日待");
+        case 58: return w === 0 ? fmt("🔴236-443", "14:43上班/23:18下班") : fmt("⚪️日待");
+        case 59: return fmt("🔴1174-1191便-1227A-1227", "出勤日11:15上班");
+        case 60: return fmt("🟢272-171A-171便", "09:58下班");
+        case 61: return fmt("🟢例假");
+        case 62: return fmt("🟡1231便-1274-1274B", "17:20上班");
+        case 63: return fmt("🟠4152-4135", "11:58下班");
+        case 64: return fmt("🔴4216便-273-288-288便", "15:42上班");
+        case 65: return fmt("🟠1112便-1143-1194", "14:06下班");
+        case 66: return fmt("🔴401便-整4-442便-4193便", "出勤日08:38上班");
+        case 67: return fmt("🟢整1-4162便", "09:15下班");
+        case 68: return fmt("🟢例假");
+        case 69: return fmt("🔴179便-1268-1268B-1289便", "出勤日16:19上班");
+        case 70: return (w === 5 || w === 6) ? fmt("🟠1170-1178便-1217", "17:00下班") : fmt("⚪️日待");
+        case 71: return fmt("🔴1198-2253", "13:41上班");
+        case 72: return fmt("🟢1122-1147", "10:14下班");
+        case 73: return fmt("🔴426", "11:40上班");
+        case 74: return fmt("🟢401", "09:35下班");
+        case 75: return fmt("🟢例假");
+        case 76: 
+          if (w === 4) return fmt("🟡432便", "14:08上班");
+          if (w === 5 || w === 6 || w === 0) return fmt("🟡436", "17:01上班");
+          return fmt("⚪️日待");
+        case 77: return [1, 5, 6, 0].includes(w) ? fmt("🟠411", "13:13下班") : fmt("⚪️日待");
+        case 78: return fmt("🔴179便-2042-1289A-1289", "16:19上班");
+        case 79: return fmt("🟢休班", "00:43下班");
+        case 80: return fmt("🟢週休");
+        case 81: return fmt("🟢例假");
+        default: return fmt(`第 ${day} 天`);
+      }
+    }
+
+    // 2. 宜蘭車班客車組（68天）
+    function getShiftYilan(day, date) {
+      const w = date.getDay();
+      const isWeekend = (w === 0 || w === 6);
+      switch(day) {
+        case 1: return fmt("🟡4046", "20:17上班");
+        case 2: return fmt("🟠407-428", "15:40下班");
+        case 3: return fmt("🔴4183-4248", "出勤日13:32上班");
+        case 4: return fmt("🟠日待", "14:30下班");
+        case 5: return fmt("🔴4023-4044-4235便", "10:52上班");
+        case 6: return isWeekend ? fmt("🟢4106-4127便", "08:20下班") : fmt("🟠4106-4129-4142-4151便", "10:57下班");
+        case 7: return fmt("🟢例假");
+        case 8: return fmt("🔴4198-4229-4232便", "16:20上班");
+        case 9: return fmt("🔵4007-4188", "出勤日16:31下班");
+        case 10: return fmt("🔴434-445", "16:41上班");
+        case 11: return fmt("🟠4162", "12:48下班");
+        case 12: return fmt("🔴417便-4183-4252-4252B", "13:25上班");
+        case 13: return fmt("🟠4022-4022B-4171便", "12:09下班");
+        case 14: return fmt("🟢例假");
+        case 15: return fmt("🔴4044-4235", "18:27上班");
+        case 16: return fmt("🟠4152便-4156-4173", "13:03下班");
+        case 17: return fmt("🔴423-4244", "出勤日15:53上班");
+        case 18: return fmt("🟠4151便-4172-4191", "15:37下班");
+        case 19: return fmt("🔴4182便-4211", "14:19上班");
+        case 20: return fmt("🟢4118-4137便", "09:36下班");
+        case 21: return fmt("🟢例假");
+        case 22: return fmt("🟡4222便-4239-4243A-4243-447便", "19:00上班");
+        case 23: return fmt("🟠4182", "15:17下班");
+        case 24: return fmt("🔴419-423便-248-4043-4043B", "出勤日14:20上班");
+        case 25: return fmt("🔵4151便-4178-4027A-4027", "16:57下班");
+        case 26: return fmt("🔴4188-4221", "15:23上班");
+        case 27: return fmt("🟠4148-4171", "12:19下班");
+        case 28: return fmt("🟢例假");
+        case 29: return fmt("🔴277便-4232", "15:17上班");
+        case 30: return fmt("🟠4123-228", "15:02下班");
+        case 31: return fmt("🔴4019-4216", "09:43上班");
+        case 32: return fmt("🟠4102-4161", "11:47下班");
+        case 33: return fmt("🟢週休");
+        case 34: return fmt("🟢例假");
+        case 35: return fmt("🔴4194-4213-4222", "16:29上班");
+        case 36: return fmt("🟠4003-4178", "出勤日14:06下班");
+        case 37: return fmt("🔴4177-4046", "12:22上班/21:24下班");
+        case 38: return fmt("🟠4114-4177", "06:05上班/13:30下班");
+        case 39: return fmt("🔴4191-4240", "14:29上班");
+        case 40: return fmt("🟠4138-4151便", "10:57下班");
+        case 41: return fmt("🟢例假");
+        case 42: return fmt("🔴231", "17:11上班");
+        case 43: return fmt("🟠272-419", "15:28下班");
+        case 44: return (w === 5 || w === 6) ? fmt("🔴4032-4035-4035B", "15:55上班") : fmt("🔴4032-4037", "15:55上班");
+        case 45: return fmt("🟠4007便-218-273便", "15:43下班");
+        case 46: return fmt("🔴4151-4032-434", "出勤日09:58上班");
+        case 47: return isWeekend ? fmt("🟠4103-214", "11:04下班") : fmt("🟠4103-4022便", "10:34下班");
+        case 48: return fmt("🟢例假");
+        case 49: return fmt("🔴4172便-4184A-4184-4247", "12:21上班/22:45下班");
+        case 50: return fmt("🔴4127-4017便-4032", "07:22上班/17:33下班");
+        case 51: return fmt("🔴423便-4240-4043便-4043B便", "出勤日16:03上班");
+        case 52: return fmt("🟠4151-4162-4183", "14:41下班");
+        case 53: return fmt("🔴228-231-4222便", "13:54上班");
+        case 54: return fmt("🟠4113-4172-218便", "12:24下班");
+        case 55: return fmt("🟢例假");
+        case 56: return fmt("🔴日待", "12:30上班/20:30下班");
+        case 57: return fmt("🔵日待", "08:30上班/16:30下班");
+        case 58: return fmt("🔴日待", "12:30上班/20:30下班");
+        case 59: return fmt("🔵日待", "08:30上班/16:30下班");
+        case 60: return fmt("🔴224便-4033-4042", "出勤日13:02上班");
+        case 61: return fmt("🟢207A-207", "09:10下班");
+        case 62: return fmt("🟢例假");
+        case 63: return fmt("🔴238便-4241", "17:15上班");
+        case 64: return fmt("🟠4172", "13:30下班");
+        case 65: return fmt("🔴415便-238", "12:24上班");
+        case 66: return fmt("🟢4117-4124", "08:04下班");
+        case 67: return fmt("🟢週休");
+        case 68: return fmt("🟢例假");
+        default: return fmt(`第 ${day} 天`);
+      }
+    }
+
+    // 3. 基隆車班對號組（20天）
+    function getShiftKeelungExpress(day) {
+      switch(day) {
+        case 1: return fmt("🟡283-2263便", "19:12上班");
+        case 2: return fmt("🟠116", "14:55下班");
+        case 3: return fmt("🔴2174-4831-4836-4737", "15:00上班");
+        case 4: return fmt("🟠103A-103-1172-1197便", "出勤日14:04下班");
+        case 5: return fmt("🔴123-120-149", "10:47上班");
+        case 6: return fmt("🟢270", "10:52下班");
+        case 7: return fmt("🟢例假");
+        case 8: return fmt("🟡1222便-1247", "17:12上班");
+        case 9: return fmt("🟠103-178-178B-1202便", "16:07下班");
+        case 10: return fmt("🔴1194便-1211-2037-281便", "14:06上班");
+        case 11: return fmt("🟠108", "11:37下班");
+        case 12: return fmt("🔴193-194A-194", "出勤日08:28上班");
+        case 13: return fmt("🟢2007A-2007", "07:20下班");
+        case 14: return fmt("🟢例假");
+        case 15: return fmt("⚪️日待");
+        case 16: return fmt("⚪️日待");
+        case 17: return fmt("🔴139", "15:45上班");
+        case 18: return fmt("🟢102", "09:19下班");
+        case 19: return fmt("🟢週休");
+        case 20: return fmt("🟢例假");
+        default: return fmt(`第 ${day} 天`);
+      }
+    }
+
+    // 4. 基隆車班大輪組（60天）
+    function getShiftKeelungMain(day, date) {
+      const w = date.getDay();
+      const isWeekend = (w === 0 || w === 6);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(date.getDate() + 1);
+      const nextW = nextDate.getDay();
+      const isNextDayWeekday = (nextW >= 1 && nextW <= 5);
+
+      switch(day) {
+        case 1: return fmt("🟡7035-7036", "20:46上班");
+        case 2: return fmt("🔵280-277", "17:37下班");
+        case 3: return fmt("🔴4188便-4825-4832-4733-1248便-1273", "13:34上班");
+        case 4: return fmt("🟠1158-1183", "11:24下班");
+        case 5: return fmt("🔴121-128-1248便", "出勤日09:43上班");
+        case 6: return fmt("🟢1122便-4152", "08:54下班");
+        case 7: return fmt("🟢例假");
+        case 8: return fmt("🟡1238便-1261-1280", "18:47上班");
+        case 9: return isWeekend ? fmt("🔵4814-4815-4823-4828-4831-4193便", "18:04下班") : fmt("🔵4714-4715-4823-4828-4831-4193便", "18:04下班");
+        case 10: return fmt("🔴165-165便-128", "12:43上班");
+        case 11: return fmt("🟠1107-2134-2134便-108便", "11:27下班");
+        case 12: return (w >= 1 && w <= 4) ? fmt("🔴2013-136", "出勤日10:07上班") : fmt("🔴2013-158", "出勤日10:07上班");
+        case 13: return fmt("🟢4708A-4708-4811-4816-4135便", "10:57下班");
+        case 14: return fmt("🟢例假");
+        case 15: return fmt("🔴1202便-1231-1231B", "15:09上班");
+        case 16: return isWeekend ? fmt("🟠2134便-1004", "12:28下班") : fmt("🟠1130A-1130-4162便-4715", "11:55下班");
+        case 17: return (w >= 1 && w <= 4) ? fmt("⚪️日待") : fmt("🔴119-136", "09:27上班/20:57下班");
+        case 18: return fmt("🔴175-1262-1262B", "出勤日14:49上班");
+        case 19: return fmt("🟠4712-4813-4818-1171便", "11:51下班");
+        case 20: return fmt("🟢例假");
+        case 21: return fmt("🔴4218-4209-1278-1278B", "16:38上班");
+        case 22: return isWeekend ? fmt("🟠1136便-4818-4821-4822-4823-4177便", "15:19下班") : fmt("🟠1136便-4818-4821-4722-4823-4177便", "15:19下班");
+        case 23: return fmt("🔴4188便-221-277-277B-281便", "13:34上班");
+        case 24: return fmt("🟠162", "12:59下班");
+        case 25: return (w >= 1 && w <= 4) ? fmt("🔴270-230-283", "出勤日09:44上班") : fmt("🔴270-232-283", "出勤日09:44上班");
+        case 26: return isWeekend ? fmt("🟢4706-4807-4814-4131便", "10:14下班") : fmt("🟢4706-4707-4714A-4131便", "10:14下班");
+        case 27: return fmt("🟢例假");
+        case 28: return fmt("🔴145-145便", "16:56上班");
+        case 29: return fmt("🟢280", "10:36下班");
+        case 30: return w === 0 ? fmt("🔴173-182", "10:03上班/20:27下班") : fmt("⚪️日待");
+        case 31: return fmt("🟡4742-4742B", "20:07上班");
+        case 32: return fmt("🟢4703A-4703", "07:03下班");
+        case 33: return fmt("🟢週休");
+        case 34: return fmt("🟢例假");
+        case 35: return fmt("🟡4738-4741-1283", "18:13上班");
+        case 36: return fmt("🟠2134-2134B", "12:41下班");
+        case 37: return fmt("🔴137-134", "出勤日11:02上班/20:44下班");
+        case 38: return fmt("🔴1198便-1221-2253便-1247-1298-1298B", "14:37上班");
+        case 39: return fmt("🟢270便", "10:42下班");
+        case 40: return fmt("🟢例假");
+        case 41: return isNextDayWeekday ? fmt("🟢1276-1295", "22:09上班") : fmt("🟡4211-1276-1295", "19:20上班");
+        case 42: 
+          if (isWeekend) return fmt("🔵131便-148-148B-1226便", "18:35下班");
+          if (w >= 1 && w <= 5) return fmt("🟢1140A-1140", "09:30下班");
+          return fmt("⚪️日待");
+        case 43: return fmt("🔴135-150", "13:49上班");
+        case 44: return fmt("🟠4022便-4816-4817-4023便", "13:14下班");
+        case 45: return fmt("🔴1181A-1181-1232-1257便", "出勤日10:48上班");
+        case 46: return fmt("🟢4704A-4704-4705", "07:44下班");
+        case 47: return fmt("🟢例假");
+        case 48: return fmt("🟡128-128B-4744-4744B", "18:25上班");
+        case 49: return fmt("🔵2114-1163-1167便-1218-1237便", "18:21下班");
+        case 50: return fmt("🔴167-152-152B", "出勤日14:45上班");
+        case 51: return isWeekend ? fmt("🟠4162便-4815-4822-4821-4173便", "14:36下班") : fmt("🟠4722-4821-4173便", "14:36下班");
+        case 52: return fmt("🔴4178便-4824-4825-4183便-2037", "11:28上班");
+        case 53: return fmt("🟢1132-1151便", "09:51下班");
+        case 54: return fmt("🟢例假");
+        case 55: return fmt("🔴1211便-1228-1247便-157", "15:03上班");
+        case 56: return fmt("🟠1168便-1168-2213便", "13:24下班");
+        case 57: return fmt("🔴4182便-4826-4827-277便-277-1258-1281", "12:37上班");
+        case 58: return fmt("🟢1134-1157", "10:19下班");
+        case 59: return fmt("🟢週休");
+        case 60: return fmt("🟢例假");
+        default: return fmt(`第 ${day} 天`);
+      }
+    }
+
+    // 5. 三輪三班（84天完整數據）
+    const THREE_SHIFT_DATA = {
+      1: fmt("🔵日", "07:30上班/19:30下班"),
+      2: fmt("🟡夜", "19:30上班"),
+      3: fmt("🟢例假", "07:30下班"),
+      4: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      5: fmt("🟡夜", "19:30上班"),
+      6: fmt("🟢休", "07:30下班"),
+      7: fmt("🔵日", "07:30上班/19:30下班"),
+      8: fmt("🟡夜", "19:30上班"),
+      9: fmt("🟢例假", "07:30下班"),
+      10: fmt("🟢休息日"),
+      11: fmt("🟡夜", "19:30上班"),
+      12: fmt("🟢休", "07:30下班"),
+      13: fmt("🔵日", "07:30上班/19:30下班"),
+      14: fmt("🟡夜", "19:30上班"),
+      15: fmt("🟢例假", "07:30下班"),
+      16: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      17: fmt("🟡夜", "19:30上班"),
+      18: fmt("🟢休", "07:30下班"),
+      19: fmt("🔵日", "07:30上班/19:30下班"),
+      20: fmt("🟡夜", "19:30上班"),
+      21: fmt("🟢例假", "07:30下班"),
+      22: fmt("🔵日", "07:30上班/19:30下班"),
+      23: fmt("🟡夜", "19:30上班"),
+      24: fmt("🟢休", "07:30下班"),
+      25: fmt("🟢休息日"),
+      26: fmt("🟡夜", "19:30上班"),
+      27: fmt("🟢休", "07:30下班"),
+      28: fmt("🔵日", "07:30上班/19:30下班"),
+      29: fmt("🟡夜", "19:30上班"),
+      30: fmt("🟢例假", "07:30下班"),
+      31: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      32: fmt("🟡夜", "19:30上班"),
+      33: fmt("🟢休", "07:30下班"),
+      34: fmt("🔵日", "07:30上班/19:30下班"),
+      35: fmt("🟡夜", "19:30上班"),
+      36: fmt("🟢例假", "07:30下班"),
+      37: fmt("🔵日", "07:30上班/19:30下班"),
+      38: fmt("🟡夜", "19:30上班"),
+      39: fmt("🟢休", "07:30下班"),
+      40: fmt("🟢休息日"),
+      41: fmt("🟡夜", "19:30上班"),
+      42: fmt("🟢休", "07:30下班"),
+      43: fmt("🔵日", "07:30上班/19:30下班"),
+      44: fmt("🟡夜", "19:30上班"),
+      45: fmt("🟢例假", "07:30下班"),
+      46: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      47: fmt("🟡夜", "19:30上班"),
+      48: fmt("🟢休", "07:30下班"),
+      49: fmt("🔵日", "07:30上班/19:30下班"),
+      50: fmt("🟡夜", "19:30上班"),
+      51: fmt("🟢例假", "07:30下班"),
+      52: fmt("🔵日", "07:30上班/19:30下班"),
+      53: fmt("🟡夜", "19:30上班"),
+      54: fmt("🟢休", "07:30下班"),
+      55: fmt("🟢休息日"),
+      56: fmt("🟡夜", "19:30上班"),
+      57: fmt("🟢休", "07:30下班"),
+      58: fmt("🔵日", "07:30上班/19:30下班"),
+      59: fmt("🟡夜", "19:30上班"),
+      60: fmt("🟢例假", "07:30下班"),
+      61: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      62: fmt("🟡夜", "19:30上班"),
+      63: fmt("🟢休", "07:30下班"),
+      64: fmt("🔵日", "07:30上班/19:30下班"),
+      65: fmt("🟡夜", "19:30上班"),
+      66: fmt("🟢例假", "07:30下班"),
+      67: fmt("🔵日", "07:30上班/19:30下班"),
+      68: fmt("🟡夜", "19:30上班"),
+      69: fmt("🟢休", "07:30下班"),
+      70: fmt("🟢休息日"),
+      71: fmt("🟡夜", "19:30上班"),
+      72: fmt("🟢休", "07:30下班"),
+      73: fmt("🔵日", "07:30上班/19:30下班"),
+      74: fmt("🟡夜", "19:30上班"),
+      75: fmt("🟢例假", "07:30下班"),
+      76: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      77: fmt("🟡夜", "19:30上班"),
+      78: fmt("🟢休", "07:30下班"),
+      79: fmt("🔵日", "07:30上班/19:30下班"),
+      80: fmt("🟡夜", "19:30上班"),
+      81: fmt("🟢例假", "07:30下班"),
+      82: fmt("🟢休息日"),
+      83: fmt("🟡夜", "19:30上班"),
+      84: fmt("🟢休", "07:30下班")
+    };
+
+    function getShiftThreeShift(day) {
+      return THREE_SHIFT_DATA[day] || fmt(`第 ${day} 天`);
+    }
+
+    // 6. 收款三輪三班（84天完整數據）
+    const CASHIER_THREE_SHIFT_DATA = {
+      1: fmt("🟢休息日"),
+      2: fmt("🟡夜", "19:30上班"),
+      3: fmt("🟢例假", "07:30下班"),
+      4: fmt("🟠日A", "09:30上班/16:30下班"),
+      5: fmt("🟡夜", "19:30上班"),
+      6: fmt("🟢休", "07:30下班"),
+      7: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      8: fmt("🟡夜", "19:30上班"),
+      9: fmt("🟢例假", "07:30下班"),
+      10: fmt("🟠日A", "09:30上班/16:30下班"),
+      11: fmt("🟡夜", "19:30上班"),
+      12: fmt("🟢休", "07:30下班"),
+      13: fmt("🟠日A", "09:30上班/16:30下班"),
+      14: fmt("🟡夜", "19:30上班"),
+      15: fmt("🟢休", "07:30下班"),
+      16: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      17: fmt("🟡夜", "19:30上班"),
+      18: fmt("🟢例假", "07:30下班"),
+      19: fmt("🟠日A", "09:30上班/16:30下班"),
+      20: fmt("🟡夜", "19:30上班"),
+      21: fmt("🟢休", "07:30下班"),
+      22: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      23: fmt("🟡夜", "19:30上班"),
+      24: fmt("🟢例假", "07:30下班"),
+      25: fmt("🟠日A", "09:30上班/16:30下班"),
+      26: fmt("🟡夜", "19:30上班"),
+      27: fmt("🟢休", "07:30下班"),
+      28: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      29: fmt("🟡夜", "19:30上班"),
+      30: fmt("🟢例假", "07:30下班"),
+      31: fmt("🟠日A", "09:30上班/16:30下班"),
+      32: fmt("🟡夜", "19:30上班"),
+      33: fmt("🟢休", "07:30下班"),
+      34: fmt("🟠日A", "09:30上班/16:30下班"),
+      35: fmt("🟡夜", "19:30上班"),
+      36: fmt("🟢休", "07:30下班"),
+      37: fmt("🟢休息日"),
+      38: fmt("🟡夜", "19:30上班"),
+      39: fmt("🟢例假", "07:30下班"),
+      40: fmt("🟠日A", "09:30上班/16:30下班"),
+      41: fmt("🟡夜", "19:30上班"),
+      42: fmt("🟢休", "07:30下班"),
+      43: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      44: fmt("🟡夜", "19:30上班"),
+      45: fmt("🟢例假", "07:30下班"),
+      46: fmt("🟠日A", "09:30上班/16:30下班"),
+      47: fmt("🟡夜", "19:30上班"),
+      48: fmt("🟢休", "07:30下班"),
+      49: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      50: fmt("🟡夜", "19:30上班"),
+      51: fmt("🟢例假", "07:30下班"),
+      52: fmt("🟠日A", "09:30上班/16:30下班"),
+      53: fmt("🟡夜", "19:30上班"),
+      54: fmt("🟢休", "07:30下班"),
+      55: fmt("🟠日A", "09:30上班/16:30下班"),
+      56: fmt("🟡夜", "19:30上班"),
+      57: fmt("🟢休", "07:30下班"),
+      58: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      59: fmt("🟡夜", "19:30上班"),
+      60: fmt("🟢例假", "07:30下班"),
+      61: fmt("🟠日A", "09:30上班/16:30下班"),
+      62: fmt("🟡夜", "19:30上班"),
+      63: fmt("🟢休", "07:30下班"),
+      64: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      65: fmt("🟡夜", "19:30上班"),
+      66: fmt("🟢例假", "07:30下班"),
+      67: fmt("🟠日A", "09:30上班/16:30下班"),
+      68: fmt("🟡夜", "19:30上班"),
+      69: fmt("🟢休", "07:30下班"),
+      70: fmt("🟢休息日"),
+      71: fmt("🟡夜", "19:30上班"),
+      72: fmt("🟢例假", "07:30下班"),
+      73: fmt("🟠日A", "09:30上班/16:30下班"),
+      74: fmt("🟡夜", "19:30上班"),
+      75: fmt("🟢休", "07:30下班"),
+      76: fmt("🟠日A", "09:30上班/16:30下班"),
+      77: fmt("🟡夜", "19:30上班"),
+      78: fmt("🟢休", "07:30下班"),
+      79: fmt("🔵日", "出勤日07:30上班/19:30下班"),
+      80: fmt("🟡夜", "19:30上班"),
+      81: fmt("🟢例假", "07:30下班"),
+      82: fmt("🟠日A", "09:30上班/16:30下班"),
+      83: fmt("🟡夜", "19:30上班"),
+      84: fmt("🟢休", "07:30下班")
+    };
+
+    function getShiftCashierThreeShift(day) {
+      return CASHIER_THREE_SHIFT_DATA[day] || fmt(`第 ${day} 天`);
+    }
+
+    // 7. 台北車班週休組（20天）
+    function getShiftTaipeiWeekend(day, date) {
+      const w = date.getDay();
+      switch(day) {
+        case 1: return fmt("🟡438", "17:33上班");
+        case 2: return fmt("🟠415", "15:04下班");
+        case 3: return fmt("🔴442", "16:04上班");
+        case 4: return fmt("🟢4013", "10:02下班");
+        case 5: return fmt("🟢週休");
+        case 6: return fmt("🟢例假");
+        case 7: return fmt("🟡1238-1261便-4225", "17:45上班");
+        case 8: return fmt("🟠1137便-1157-1208", "15:48下班");
+        case 9: 
+          if ([1, 2, 3, 4, 0].includes(w)) return fmt("🔴1170-1178便-1217-1227便", "11:20上班");
+          return fmt("⚪️日待");
+        case 10: 
+          if (w >= 1 && w <= 5) return fmt("🟢1120-1141-1141便", "09:51下班");
+          return fmt("⚪️日待");
+        case 11: return fmt("🔴4151便-整5-4248便", "出勤日12:50上班");
+        case 12: return fmt("🟢4144-4119", "09:56下班");
+        case 13: return fmt("🟢例假");
+        case 14: return fmt("🟢週休");
+        case 15: 
+          if ([1, 5, 6, 0].includes(w)) return fmt("🟡246便-1B-1N-4235便", "17:48上班/23:13下班");
+          return fmt("⚪️日待");
+        case 16: return fmt("🔴1208-1241", "14:39上班");
+        case 17: return fmt("🟠1134-4119-1178便", "12:44下班");
+        case 18: return fmt("🔴1192-1235便-4209", "13:24上班");
+        case 19: return fmt("🟠1136-4017", "11:36下班");
+        case 20: return fmt("🟢例假");
+        default: return fmt(`第 ${day} 天`);
+      }
+    }
+
+    function getRawShiftString(member, cycleDay, targetDate) {
+      const w = targetDate.getDay();
+      const isWeekend = (w === 0 || w === 6);
+
+      const nextDate = new Date(targetDate);
+      nextDate.setDate(targetDate.getDate() + 1);
+      const nextW = nextDate.getDay();
+      const isNextDayWeekday = (nextW >= 1 && nextW <= 5);
+
+      if (member.system === 'three_shift') {
+        const text = THREE_SHIFT_DATA[cycleDay] || "";
+        if (text.includes("🔵")) return "🔵";
+        if (text.includes("🟡")) return "🟡";
+        if (text.includes("🟢")) return "🟢";
+        return "";
+      }
+
+      if (member.system === 'cashier_three_shift') {
+        const text = CASHIER_THREE_SHIFT_DATA[cycleDay] || "";
+        if (text.includes("🔵")) return "🔵";
+        if (text.includes("🟡")) return "🟡";
+        if (text.includes("🟠")) return "🟠";
+        if (text.includes("🟢")) return "🟢";
+        return "";
+      }
+
+      if (member.system === 'taipei_weekend') {
+        switch(cycleDay) {
+          case 1: case 7: return '🟡';
+          case 15: return [1, 5, 6, 0].includes(w) ? '🟡' : '⚪️';
+          case 2: case 8: case 17: case 19: return '🟠';
+          case 3: case 11: case 16: case 18: return '🔴';
+          case 9: return [1, 2, 3, 4, 0].includes(w) ? '🔴' : '⚪️';
+          case 4: case 5: case 6: case 12: case 13: case 14: case 20: return '🟢';
+          case 10: return (w >= 1 && w <= 5) ? '🟢' : '⚪️';
+          default: return '';
+        }
+      }
+
+      if (member.system === 'taipei') {
+        switch(cycleDay) {
+          case 1: case 35: case 42: case 49: case 51: case 55: case 62: return '🟡';
+          case 76:
+            if ([0, 4, 5, 6].includes(w)) return '🟡';
+            return '⚪️';
+          case 22:
+            if (w === 5) return '🔴';
+            if (w === 6) return '⚪️';
+            return '🟢';
+          case 6: case 7: case 11: case 14: case 20: case 21: case 23: case 25: case 26: case 27: case 33: case 34: case 40: case 41: case 47: case 48: case 52: case 53: case 54: case 60: case 61: case 67: case 68: case 72: case 74: case 75: case 79: case 80: case 81: 
+            if (cycleDay === 11 && (w >= 2 && w <= 6)) return '🟠';
+            if (cycleDay === 23 && isWeekend) return '🟠';
+            if (cycleDay === 47 && !isWeekend) return '🟠';
+            return '🟢';
+          case 2: case 4: case 9: case 13: case 16: case 18: case 29: case 31: case 36: case 38: case 43: case 45: case 50: case 56: case 57: case 58: case 63: case 65: case 70: case 77:
+            if (cycleDay === 57 && w !== 0) return '⚪️';
+            if (cycleDay === 57 && w === 0) return '🔴';
+            if (cycleDay === 58 && w !== 0) return '⚪️';
+            if (cycleDay === 58 && w === 0) return '🔴';
+            if (cycleDay === 70 && !(w === 5 || w === 6)) return '⚪️';
+            if (cycleDay === 77 && [2, 3, 4].includes(w)) return '⚪️';
+            return '🟠';
+          default: return '🔴';
+        }
+      } else if (member.system === 'yilan') {
+        switch(cycleDay) {
+          case 1: case 22: return '🟡';
+          case 9: case 25: case 57: case 59: return '🔵';
+          case 6: case 7: case 14: case 20: case 21: case 28: case 33: case 34: case 41: case 48: case 55: case 61: case 62: case 66: case 67: case 68:
+            if (cycleDay === 6 && !isWeekend) return '🟠';
+            return '🟢';
+          case 2: case 4: case 11: case 13: case 16: case 18: case 23: case 27: case 30: case 32: case 36: case 38: case 40: case 43: case 45: case 47: case 52: case 54: case 64: return '🟠';
+          default: return '🔴';
+        }
+      } else if (member.system === 'keelung_express') {
+        switch(cycleDay) {
+          case 1: case 8: return '🟡';
+          case 15: case 16: return '⚪️';
+          case 6: case 7: case 13: case 14: case 18: case 19: case 20: return '🟢';
+          case 2: case 4: case 9: case 11: return '🟠';
+          default: return '🔴';
+        }
+      } else if (member.system === 'keelung_main') {
+        switch(cycleDay) {
+          case 1: case 8: case 31: case 35: case 48: return '🟡';
+          case 2: case 9: case 49: return '🔵';
+          case 42: return isWeekend ? '🔵' : ((w >= 1 && w <= 5) ? '🟢' : '⚪️');
+          case 41: return isNextDayWeekday ? '🟢' : '🟡';
+          case 6: case 7: case 13: case 14: case 20: case 26: case 27: case 29: case 32: case 33: case 34: case 39: case 40: case 46: case 47: case 53: case 54: case 58: case 59: case 60: return '🟢';
+          case 4: case 11: case 16: case 19: case 22: case 24: case 36: case 44: case 51: case 56: return '🟠';
+          case 17: return (w >= 1 && w <= 4) ? '⚪️' : '🔴';
+          case 30: return w === 0 ? '🔴' : '⚪️';
+          default: return '🔴';
+        }
+      }
+      return '';
+    }
+
+    function calculateCycleDay(targetDate, baseShiftDay, totalDays) {
+      const tDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      const bDate = new Date(BASE_DATE.getFullYear(), BASE_DATE.getMonth(), BASE_DATE.getDate());
+      const diffDays = Math.round((tDate.getTime() - bDate.getTime()) / (1000 * 3600 * 24));
+      let day = (baseShiftDay + diffDays) % totalDays;
+      while (day <= 0) day += totalDays;
+      return day;
+    }
+
+    function getShiftData(member, targetDate) {
+      const cycleDay = calculateCycleDay(targetDate, member.baseDay, member.totalDays);
+      let shiftInfo = '';
+      if (member.system === 'taipei') shiftInfo = getShiftTaipei(cycleDay, targetDate);
+      else if (member.system === 'yilan') shiftInfo = getShiftYilan(cycleDay, targetDate);
+      else if (member.system === 'keelung_express') shiftInfo = getShiftKeelungExpress(cycleDay);
+      else if (member.system === 'keelung_main') shiftInfo = getShiftKeelungMain(cycleDay, targetDate);
+      else if (member.system === 'three_shift') shiftInfo = getShiftThreeShift(cycleDay);
+      else if (member.system === 'cashier_three_shift') shiftInfo = getShiftCashierThreeShift(cycleDay);
+      else if (member.system === 'taipei_weekend') shiftInfo = getShiftTaipeiWeekend(cycleDay, targetDate);
+
+      const rawShift = getRawShiftString(member, cycleDay, targetDate);
+      return { cycleDay, shiftInfo, rawShift };
+    }
+
+    function getStyleClass(rawShift) {
+      if (rawShift.includes('🟢')) return 'bg-rest';
+      if (rawShift.includes('🟡')) return 'bg-yellow';
+      if (rawShift.includes('🟠')) return 'bg-orange';
+      if (rawShift.includes('🔴')) return 'bg-red';
+      if (rawShift.includes('🔵')) return 'bg-blue';
+      if (rawShift.includes('⚪️')) return 'bg-white';
+      return '';
+    }
+
+    function getSelectedMembers() {
+      const checkedIds = Array.from(document.querySelectorAll('.member-checkbox:checked')).map(cb => cb.value);
+      return MEMBERS.filter(m => checkedIds.includes(m.id));
+    }
+
+    function renderView() {
+      const weekNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+      const selectedMembers = getSelectedMembers();
+
+      if (currentView === 'single') {
+        const dateInput = document.getElementById('targetDate').value;
+        if (!dateInput) return;
+
+        const parts = dateInput.split('-');
+        const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+        document.getElementById('singleDateHeader').innerText = `📅 ${dateInput} (${weekNames[targetDate.getDay()]})`;
+        const container = document.getElementById('singleCompareGrid');
+        container.innerHTML = '';
+
+        if (selectedMembers.length === 0) {
+          container.innerHTML = '<div class="no-data-msg">⚠️ 請至少勾選一位人員以顯示班表</div>';
+          return;
+        }
+
+        selectedMembers.forEach(m => {
+          const { cycleDay, shiftInfo, rawShift } = getShiftData(m, targetDate);
+          container.innerHTML += `
+            <div class="person-card ${getStyleClass(rawShift)}">
+              <div class="person-header">
+                <span class="person-name">${m.name}</span>
+                <span class="cycle-tag-group">
+                  <span class="cycle-tag-name">${m.label}</span>
+                  <span class="cycle-tag-day">第 ${cycleDay} 天</span>
+                </span>
+              </div>
+              <div class="shift-body">${shiftInfo}</div>
+            </div>
+          `;
+        });
+
+      } else {
+        const monthInput = document.getElementById('targetMonth').value;
+        if (!monthInput) return;
+
+        const [year, month] = monthInput.split('-').map(Number);
+        const container = document.getElementById('monthContainer');
+        container.innerHTML = '';
+
+        if (selectedMembers.length === 0) {
+          container.innerHTML = '<div class="no-data-msg">⚠️ 請至少勾選一位人員以顯示班表</div>';
+          return;
+        }
+
+        if (monthMode === 'cards') {
+          container.className = 'month-container-cards';
+        } else {
+          container.className = 'month-container-grid';
+
+          const weekHeaders = ["日", "一", "二", "三", "四", "五", "六"];
+          weekHeaders.forEach(w => {
+            const head = document.createElement('div');
+            head.className = 'cal-head';
+            head.innerText = w;
+            container.appendChild(head);
+          });
+        }
+
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+        const startDayOfWeek = firstDay.getDay();
+        const daysInMonth = lastDay.getDate();
+        const todayStr = new Date().toDateString();
+
+        if (monthMode === 'grid') {
+          for (let i = 0; i < startDayOfWeek; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'cal-cell';
+            empty.style.background = '#f8fafc';
+            empty.style.border = 'none';
+            container.appendChild(empty);
+          }
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const currentDate = new Date(year, month - 1, d);
+          const dayOfWeekName = weekNames[currentDate.getDay()];
+          
+          const cell = document.createElement('div');
+          cell.className = 'cal-cell';
+          if (currentDate.toDateString() === todayStr) cell.classList.add('is-today');
+
+          let membersHtml = '';
+          selectedMembers.forEach(m => {
+            const { cycleDay, shiftInfo, rawShift } = getShiftData(m, currentDate);
+            
+            const nameLabel = monthMode === 'grid' 
+              ? m.name 
+              : `${m.name} <span class="day-sub-tag">(第${cycleDay}天)</span>`;
+
+            membersHtml += `
+              <div class="cal-person-block ${getStyleClass(rawShift)}">
+                <div class="cal-person-name">${nameLabel}</div>
+                <div class="cal-shift-text">${shiftInfo}</div>
+              </div>
+            `;
+          });
+
+          cell.innerHTML = `
+            <div class="d-header">
+              <span class="d-num">${d} 日</span>
+              <span class="mobile-weekday">${dayOfWeekName}</span>
+            </div>
+            ${membersHtml}
+          `;
+          container.appendChild(cell);
+        }
+      }
+    }
+
+    document.getElementById('btnSingle').addEventListener('click', function() {
+      currentView = 'single';
+      this.classList.add('active');
+      document.getElementById('btnMonth').classList.remove('active');
+      
+      document.getElementById('singleView').style.display = 'block';
+      document.getElementById('monthView').style.display = 'none';
+      document.getElementById('monthSubBtnGroup').style.display = 'none';
+      
+      document.getElementById('dateBox').style.display = 'block';
+      document.getElementById('monthBox').style.display = 'none';
+      renderView();
+    });
+
+    document.getElementById('btnMonth').addEventListener('click', function() {
+      currentView = 'month';
+      this.classList.add('active');
+      document.getElementById('btnSingle').classList.remove('active');
+      
+      document.getElementById('singleView').style.display = 'none';
+      document.getElementById('monthView').style.display = 'block';
+      document.getElementById('monthSubBtnGroup').style.display = 'flex';
+      
+      document.getElementById('dateBox').style.display = 'none';
+      document.getElementById('monthBox').style.display = 'block';
+      renderView();
+    });
+
+    document.getElementById('subBtnCards').addEventListener('click', function() {
+      monthMode = 'cards';
+      this.classList.add('active');
+      document.getElementById('subBtnGrid').classList.remove('active');
+      renderView();
+    });
+
+    document.getElementById('subBtnGrid').addEventListener('click', function() {
+      monthMode = 'grid';
+      this.classList.add('active');
+      document.getElementById('subBtnCards').classList.remove('active');
+      renderView();
+    });
+
+    document.getElementById('targetDate').addEventListener('change', renderView);
+    document.getElementById('targetMonth').addEventListener('change', renderView);
+
+    initMemberCheckboxes();
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+
+    document.getElementById('targetDate').value = `${yyyy}-${mm}-${dd}`;
+    document.getElementById('targetMonth').value = `${yyyy}-${mm}`;
+
+    renderView();
+  });
+</script>
+</body>
+</html>
